@@ -8,8 +8,10 @@ import com.example.ecommerce.entity.Product;
 import com.example.ecommerce.exception.ResourceNotFound;
 import com.example.ecommerce.repository.CategoryRepository;
 import com.example.ecommerce.repository.ProductRepository;
+import com.example.ecommerce.service.CloudinaryService;
 import com.example.ecommerce.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,8 +32,11 @@ public class ProductServiceImpl implements ProductService {
     @Autowired
     private Cloudinary cloudinary;
 
+    @Autowired
+    private CloudinaryService cloudinaryService;
+
     @Override
-    public Product createProduct(ProductRequest product) {
+    public Product createProduct(ProductRequest product, MultipartFile file) {
         try {
             Product createdProduct = new Product();
             createdProduct.setName(product.getName());
@@ -39,13 +44,18 @@ public class ProductServiceImpl implements ProductService {
             createdProduct.setStock(product.getStock());
             createdProduct.setPrice(product.getPrice());
             createdProduct.setCreatedAt(LocalDateTime.now());
-            System.out.println("herer");
 
             if(product.getCategoryId() != null){
                 Category category = categoryRepository.findById(product.getCategoryId())
                         .orElseThrow(()-> new ResourceNotFound("Category not found with the id: " + product.getCategoryId()));
 
                 createdProduct.setCategory(category);
+            }
+
+            if(file != null){
+                Map uploadedResult = cloudinaryService.uploadFile(file, "products");
+                createdProduct.setImage_url(uploadedResult.get("secure_url").toString());
+                createdProduct.setImagePublicId(uploadedResult.get("public_id").toString());
             }
 
             return productRepository.save(createdProduct);
@@ -56,8 +66,8 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public List<Product> getAllProducts() {
-        return productRepository.findAll();
+    public List<Product> getAllProducts(Pageable pageable) {
+        return productRepository.findAll(pageable).getContent();
     }
 
     @Override
@@ -67,7 +77,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Product updateProduct(UUID id, ProductRequest productRequest) {
+    public Product updateProduct(UUID id, ProductRequest productRequest, MultipartFile file) throws IOException {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFound("Product not found with id: " + id));
 
@@ -91,6 +101,12 @@ public class ProductServiceImpl implements ProductService {
             product.setImage_url(productRequest.getImageUrl());
         }
 
+        if (file != null){
+            Map uploadResult = cloudinaryService.updateFile(file, product.getImagePublicId(), "products");
+            product.setImagePublicId(uploadResult.get("public_id").toString());
+            product.setImage_url(uploadResult.get("secure_url").toString());
+        }
+
         // Optional: Update category if provided
         if (productRequest.getCategoryId() != null) {
             Category category = categoryRepository.findById(productRequest.getCategoryId())
@@ -102,13 +118,14 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public String deleteProduct(UUID id) {
+    public String deleteProduct(UUID id) throws IOException {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFound("Product not found with the id: " + id));
 
-        if(!productRepository.existsById(id)){
-            throw new ResourceNotFound("Product not found with the id: " + id);
-        }
+        cloudinaryService.deleteFile(product.getImagePublicId());
 
         productRepository.deleteById(id);
+
         return "Product deleted successfully.";
     }
 

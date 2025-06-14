@@ -31,6 +31,9 @@ public class Product {
 
     private String image_url;
 
+    @Column(name = "image_public_id")
+    private String imagePublicId;
+
     @Column(name = "created_at", nullable = true, updatable = false)
     private LocalDateTime createdAt;
 
@@ -84,6 +87,14 @@ public class Product {
 
     public void setImage_url(String image_url) {
         this.image_url = image_url;
+    }
+
+    public String getImagePublicId() {
+        return imagePublicId;
+    }
+
+    public void setImagePublicId(String imagePublicId) {
+        this.imagePublicId = imagePublicId;
     }
 
     public LocalDateTime getCreatedAt() {

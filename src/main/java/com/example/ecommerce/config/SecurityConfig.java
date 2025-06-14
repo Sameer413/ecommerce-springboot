@@ -55,13 +55,17 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(
+                                "/api/auth/**"
+//                                "/swagger-ui/**",
+//                                "/swagger-ui.html"
+                        ).permitAll()
 
                         // Product endpoints - POST, PUT, DELETE restricted to VENDOR
-                        .requestMatchers(HttpMethod.POST, "/api/products/**").hasRole("VENDOR")
-                        .requestMatchers(HttpMethod.PUT, "/api/products/**").hasRole("VENDOR")
-                        .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasRole("VENDOR")
-
+//                        .requestMatchers(HttpMethod.POST, "/api/products/**").hasRole("VENDOR")
+//                        .requestMatchers(HttpMethod.PUT, "/api/products/**").hasRole("VENDOR")
+//                        .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasRole("VENDOR")
+                                .requestMatchers("/api/products/**").permitAll()
                         // Address endpoints
                         .requestMatchers("/api/address/**").permitAll()
 
